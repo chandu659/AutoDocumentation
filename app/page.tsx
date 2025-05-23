@@ -68,6 +68,18 @@ export default function Home() {
       const fileName = file?.name || 'audio_transcription';
       const title = `Transcription: ${fileName.split('.')[0]}`;
       
+      // Prepare file info and transcription info for metadata
+      const fileInfo = file ? {
+        name: file.name,
+        type: file.type,
+        size: file.size
+      } : null;
+      
+      const transcriptionInfo = {
+        model: transcription.model || 'distil-whisper-large-v3-en',
+        language: transcription.language || 'en'
+      };
+      
       const response = await fetch("/api/export-to-docs", {
         method: "POST",
         headers: {
@@ -76,6 +88,8 @@ export default function Home() {
         body: JSON.stringify({
           title,
           content: transcription.text,
+          fileInfo,
+          transcriptionInfo
         }),
       });
 
