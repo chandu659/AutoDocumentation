@@ -6,10 +6,15 @@ export default function Home() {
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
+  const [manipulateLoading, setManipulateLoading] = useState(false);
   const [transcription, setTranscription] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [manipulateError, setManipulateError] = useState<string | null>(null);
   const [authUrl, setAuthUrl] = useState<string | null>(null);
+  const [customPrompt, setCustomPrompt] = useState('');
+  const [manipulationResult, setManipulationResult] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'transcription' | 'manipulation'>('transcription');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -121,6 +126,54 @@ export default function Home() {
       window.location.href = authUrl;
     }
   };
+  
+  const handleManipulateText = async (operation: 'summarize' | 'analyze' | 'custom') => {
+    if (!transcription || !transcription.text) {
+      setManipulateError("No transcription data to process");
+      return;
+    }
+    
+    // For custom operation, ensure we have a prompt
+    if (operation === 'custom' && !customPrompt.trim()) {
+      setManipulateError("Please enter a custom prompt");
+      return;
+    }
+    
+    setManipulateLoading(true);
+    setManipulateError(null);
+    setManipulationResult(null);
+    
+    try {
+      const response = await fetch("/api/manipulate-text", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: transcription.text,
+          operation,
+          prompt: operation === 'custom' ? customPrompt : undefined,
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      setManipulationResult(data.result);
+    } catch (err) {
+      setManipulateError(err instanceof Error ? err.message : "Failed to process text");
+      console.error("Text manipulation error:", err);
+    } finally {
+      setManipulateLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
@@ -200,7 +253,20 @@ export default function Home() {
           {transcription && (
             <div className="mt-8 p-4 bg-gray-100 dark:bg-gray-700 rounded-md">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Transcription Result:</h2>
+                <div className="flex space-x-4">
+                  <button
+                    onClick={() => setActiveTab('transcription')}
+                    className={`px-4 py-2 text-sm font-medium rounded-md ${activeTab === 'transcription' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200'}`}
+                  >
+                    Transcription
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('manipulation')}
+                    className={`px-4 py-2 text-sm font-medium rounded-md ${activeTab === 'manipulation' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200'}`}
+                  >
+                    Text Operations
+                  </button>
+                </div>
                 <button
                   onClick={handleExportToGoogleDocs}
                   disabled={exportLoading}
@@ -238,11 +304,91 @@ export default function Home() {
                 </div>
               )}
               
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-md shadow-inner overflow-auto max-h-96">
-                <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                  {transcription.text}
-                </p>
-              </div>
+              {activeTab === 'transcription' && (
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-md shadow-inner overflow-auto max-h-96">
+                  <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                    {transcription.text}
+                  </p>
+                </div>
+              )}
+              
+              {activeTab === 'manipulation' && (
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-md shadow-inner">
+                  <div className="mb-4">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Text Operations</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      Use AI to perform operations on your transcribed text
+                    </p>
+                    
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      <button
+                        onClick={() => handleManipulateText('summarize')}
+                        disabled={manipulateLoading}
+                        className={`px-4 py-2 text-sm font-medium rounded-md text-white ${manipulateLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                      >
+                        Summarize
+                      </button>
+                      <button
+                        onClick={() => handleManipulateText('analyze')}
+                        disabled={manipulateLoading}
+                        className={`px-4 py-2 text-sm font-medium rounded-md text-white ${manipulateLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'}`}
+                      >
+                        Analyze
+                      </button>
+                    </div>
+                    
+                    <div className="mb-4">
+                      <label htmlFor="custom-prompt" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Custom Prompt
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          id="custom-prompt"
+                          value={customPrompt}
+                          onChange={(e) => setCustomPrompt(e.target.value)}
+                          placeholder="Enter your instructions for the AI..."
+                          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                        />
+                        <button
+                          onClick={() => handleManipulateText('custom')}
+                          disabled={manipulateLoading || !customPrompt.trim()}
+                          className={`px-4 py-2 text-sm font-medium rounded-md text-white ${manipulateLoading || !customPrompt.trim() ? 'bg-gray-400 cursor-not-allowed' : 'bg-teal-600 hover:bg-teal-700'}`}
+                        >
+                          Process
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {manipulateError && (
+                      <div className="p-3 text-red-700 bg-red-100 dark:bg-red-900/20 dark:text-red-400 rounded-md mb-4">
+                        {manipulateError}
+                      </div>
+                    )}
+                    
+                    {manipulateLoading && (
+                      <div className="flex items-center justify-center p-4 mb-4">
+                        <svg className="animate-spin h-6 w-6 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span className="ml-2 text-gray-700 dark:text-gray-300">Processing...</span>
+                      </div>
+                    )}
+                    
+                    {manipulationResult && (
+                      <div className="mt-4">
+                        <h4 className="text-md font-medium text-gray-900 dark:text-white mb-2">Result:</h4>
+                        <div className="p-4 bg-gray-100 dark:bg-gray-700 rounded-md">
+                          <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                            {manipulationResult}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
