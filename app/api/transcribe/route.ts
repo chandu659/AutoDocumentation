@@ -28,11 +28,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check file type
-    const validTypes = ['audio/wav', 'audio/mpeg', 'audio/mp4', 'audio/x-m4a'];
-    if (!validTypes.includes(file.type)) {
+    // Check file type and extension
+    const validExtensions = ['wav', 'mp3', 'mp4', 'm4a', 'flac', 'ogg', 'opus', 'webm', 'mpga', 'mpeg'];
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    
+    if (!fileExtension || !validExtensions.includes(fileExtension)) {
       return NextResponse.json(
-        { error: 'Invalid file type. Only WAV, MP3, MP4, or M4A files are allowed.' },
+        { error: `Invalid file type. Allowed extensions: ${validExtensions.join(', ')}` },
         { status: 400 }
       );
     }
@@ -48,7 +50,7 @@ export async function POST(request: NextRequest) {
 
     // Create a unique filename
     const timestamp = Date.now();
-    const fileExtension = file.name.split('.').pop();
+    // We already have fileExtension from above
     const fileName = `audio_${timestamp}.${fileExtension}`;
     const filePath = join(uploadsDir, fileName);
 
@@ -61,6 +63,9 @@ export async function POST(request: NextRequest) {
 
     // Transcribe the audio using Groq
     try {
+      console.log(`Attempting to transcribe file: ${filePath}`);
+      console.log(`File extension: ${fileExtension}`);
+      
       const transcription = await groq.audio.transcriptions.create({
         file: createReadStream(filePath),
         model: "distil-whisper-large-v3-en",
@@ -81,20 +86,26 @@ export async function POST(request: NextRequest) {
       }
 
       return NextResponse.json(transcription);
-    } catch (transcriptionError) {
-      console.error('Transcription error:', transcriptionError);
+    } catch (transcriptionError: any) {
+      console.error('Error during transcription:', transcriptionError);
       
-      // Clean up the file if transcription fails
+      // Clean up the file after error
       try {
         unlinkSync(filePath);
         console.log(`Temporary file ${filePath} deleted after error`);
       } catch (cleanupError) {
         console.error('Error deleting temporary file:', cleanupError);
       }
-
+      
+      // Return a more specific error message
+      let errorMessage = 'Failed to transcribe audio';
+      if (transcriptionError.error && transcriptionError.error.message) {
+        errorMessage = transcriptionError.error.message;
+      }
+      
       return NextResponse.json(
-        { error: `Transcription failed: ${transcriptionError.message}` },
-        { status: 500 }
+        { error: errorMessage },
+        { status: 400 }
       );
     }
   } catch (error) {

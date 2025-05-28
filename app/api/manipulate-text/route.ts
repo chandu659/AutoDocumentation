@@ -33,9 +33,32 @@ export async function POST(request: NextRequest) {
         systemPrompt = 'You are a helpful assistant that summarizes text concisely while preserving key information.';
         userPrompt = `Please summarize the following text:\n\n${text}`;
         break;
-      case 'analyze':
-        systemPrompt = 'You are a helpful assistant that analyzes text to extract key insights, themes, and patterns.';
-        userPrompt = `Please analyze the following text and provide key insights:\n\n${text}`;
+      case 'guides':
+        systemPrompt = 'You are a helpful assistant that creates clear step-by-step guides at a 6th-grade reading level.';
+        userPrompt = `Task: Improve and finalize a step-by-step guide for Urban Eats Kitchen & Merchant Members based on the attached draft.
+Audience: Kitchen & Merchant Members who need clear, simple instructions to take action.
+Goal: Ensure they understand what to do, how to do it, frequency of when to do it (daily, weekly, monthly), who is to do it (Individual member, UE Maintenance Crew, Outside Contractor) and when to expect confirmation in the easiest way possible.
+
+Refinement Guidelines:
+- 6th-grade reading level → Simple, direct, no jargon.
+- Easy to scan → Use bold headers, numbered steps, bullet points, and tables if helpful.
+- Logical flow:
+    Title - Action-based, clear purpose.
+    Who This is For - One-line audience description.
+    What Can Be Done - Quick bullet list.
+    Step-by-Step Instructions - Numbered, easy-to-follow.
+    How to Track or Confirm - What happens next.
+    Quick Reference Table (with Frequency, Responsible Party, and Task Fields: in that order) - If applicable.
+    Need Help? - Contact details.
+    Remove fluff while keeping all necessary details.
+    Clarify confirmation steps (e.g., "Check Teams for updates within 48 hours").
+    Keep it friendly, but direct - Short sentences, no extra words.
+
+Also include the following core message naturally within the guide or instructions:
+"One of the biggest benefits of being part of Urban Eats is getting to practice and learn in a safe environment—so when you run your own business, you'll already know how to handle these situations on your own."
+Use this to highlight that Urban Eats is not just a workspace—it's a learning lab. Show how the member is expected to try first, learn from the experience, and become self-reliant over time.
+
+Text to process:\n\n${text}`;
         break;
       case 'custom':
         if (!prompt) {
