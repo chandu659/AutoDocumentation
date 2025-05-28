@@ -45,10 +45,11 @@ export async function GET(request: NextRequest) {
     
     // Redirect back to the main application
     return NextResponse.redirect(new URL('/', request.nextUrl.origin));
-  } catch (error: any) {
+  } catch (error: Error | unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error in OAuth callback:', error);
     return NextResponse.json(
-      { error: `Authentication failed: ${error.message || 'Unknown error'}` },
+      { error: `Authentication failed: ${errorMessage}` },
       { status: 500 }
     );
   }

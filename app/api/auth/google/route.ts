@@ -9,7 +9,7 @@ const CREDENTIALS_PATH = path.join(process.cwd(), 'credentials.json');
 // Scopes for Google Docs API
 const SCOPES = ['https://www.googleapis.com/auth/documents'];
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Read credentials file
     const credentialsContent = fs.readFileSync(CREDENTIALS_PATH, 'utf8');
@@ -38,10 +38,11 @@ export async function GET(request: NextRequest) {
     
     // Redirect the user to the Google OAuth consent screen
     return NextResponse.redirect(authUrl);
-  } catch (error: any) {
+  } catch (error: Error | unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error initiating Google OAuth:', error);
     return NextResponse.json(
-      { error: `Failed to initiate Google OAuth: ${error.message || 'Unknown error'}` },
+      { error: `Failed to initiate Google OAuth: ${errorMessage}` },
       { status: 500 }
     );
   }

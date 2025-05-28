@@ -46,10 +46,11 @@ export async function POST(request: NextRequest) {
     const docUrl = await createGoogleDoc(title, content, metadata);
 
     return NextResponse.json({ url: docUrl });
-  } catch (error: any) {
+  } catch (error: Error | unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error exporting to Google Docs:', error);
     return NextResponse.json(
-      { error: `Failed to export to Google Docs: ${error.message || 'Unknown error'}` },
+      { error: `Failed to export to Google Docs: ${errorMessage}` },
       { status: 500 }
     );
   }

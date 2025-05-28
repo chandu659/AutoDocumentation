@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { LoadingButton } from './LoadingButton';
 import { ErrorAlert } from './ErrorAlert';
 
 interface TextManipulationProps {

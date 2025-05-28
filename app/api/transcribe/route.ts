@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       }
 
       return NextResponse.json(transcription);
-    } catch (transcriptionError: any) {
+    } catch (transcriptionError: Error | unknown) {
       console.error('Error during transcription:', transcriptionError);
       
       // Clean up the file after error
@@ -99,8 +99,17 @@ export async function POST(request: NextRequest) {
       
       // Return a more specific error message
       let errorMessage = 'Failed to transcribe audio';
-      if (transcriptionError.error && transcriptionError.error.message) {
-        errorMessage = transcriptionError.error.message;
+      
+      // Type guard to safely access error properties
+      if (transcriptionError && 
+          typeof transcriptionError === 'object' && 
+          'error' in transcriptionError && 
+          transcriptionError.error && 
+          typeof transcriptionError.error === 'object' && 
+          'message' in transcriptionError.error) {
+        errorMessage = transcriptionError.error.message as string;
+      } else if (transcriptionError instanceof Error) {
+        errorMessage = transcriptionError.message;
       }
       
       return NextResponse.json(

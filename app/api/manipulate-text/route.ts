@@ -100,10 +100,11 @@ Text to process:\n\n${text}`;
     const result = chatCompletion.choices[0]?.message?.content || '';
 
     return NextResponse.json({ result });
-  } catch (error: any) {
+  } catch (error: Error | unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error manipulating text:', error);
     return NextResponse.json(
-      { error: `Failed to manipulate text: ${error.message || 'Unknown error'}` },
+      { error: `Failed to manipulate text: ${errorMessage}` },
       { status: 500 }
     );
   }
