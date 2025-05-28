@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { ErrorAlert } from './ErrorAlert';
 
 interface TextManipulationProps {
+  // We're keeping transcriptionText in the interface because it's passed from the parent
+  // but it's used indirectly through onManipulateText
   transcriptionText: string;
   onManipulateText: (operation: 'summarize' | 'guides' | 'custom', prompt?: string) => Promise<void>;
   isLoading: boolean;
@@ -10,7 +12,6 @@ interface TextManipulationProps {
 }
 
 export const TextManipulation: React.FC<TextManipulationProps> = ({
-  transcriptionText,
   onManipulateText,
   isLoading,
   error,
