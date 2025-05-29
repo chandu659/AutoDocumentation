@@ -1,4 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '100mb',
+    },
+    responseLimit: '100mb',
+  },
+};
 import { Groq } from 'groq-sdk';
 
 export async function POST(request: NextRequest) {

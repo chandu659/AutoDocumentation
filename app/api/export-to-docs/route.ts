@@ -1,4 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '100mb',
+    },
+    responseLimit: '100mb',
+  },
+};
 import { createGoogleDoc } from '@/utils/googleAuth';
 import fs from 'fs';
 import path from 'path';

@@ -1,4 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const config = {
+  api: {
+    bodyParser: false,
+    responseLimit: '100mb',
+  },
+};
 import { writeFile } from 'fs/promises';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
