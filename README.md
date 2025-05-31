@@ -1,4 +1,28 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Auto Documentation
+
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app) that handles audio file transcription using Groq's API.
+
+## Handling Large File Uploads on Vercel
+
+This project implements a solution for handling large audio file uploads (up to 100MB) on Vercel, which normally has a 4.5MB request size limit. The approach uses Supabase Storage (bucket name: `auto-doc`) to bypass Vercel's API route size limitations:
+
+1. **Client-side**: Files are uploaded via FormData to the transcription API route
+2. **API route**: 
+   - Validates the file type and size
+   - Uploads the file to Supabase Storage
+   - Downloads the file to a temporary location for processing
+   - Transcribes the audio using Groq API
+   - Deletes the file from Supabase Storage after transcription
+   - Returns the transcription result directly to the client
+
+### Environment Variables
+
+Create a `.env.local` file with the following variables:
+
+```
+NEXT_PUBLIC_GROQ_API_KEY=your_groq_api_key
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
 ## Getting Started
 

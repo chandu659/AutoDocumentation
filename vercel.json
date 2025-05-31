@@ -18,8 +18,5 @@
   ],
   "github": {
     "silent": true
-  },
-  "bodyParser": {
-    "sizeLimit": "100mb"
   }
 }

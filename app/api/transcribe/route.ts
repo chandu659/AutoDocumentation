@@ -1,22 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 export const config = {
   api: {
     bodyParser: false,
-    responseLimit: '100mb',
+    responseLimit: '100mb', // Increase response limit for large transcriptions
   },
 };
-import { writeFile } from 'fs/promises';
 import { join } from 'path';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, createReadStream, writeFileSync, unlinkSync } from 'fs';
+import { writeFile } from 'fs/promises';
 import Groq from 'groq-sdk';
-import { createReadStream, unlinkSync } from 'fs';
 
 // Initialize the Groq client
 const groq = new Groq({
   apiKey: process.env.NEXT_PUBLIC_GROQ_API_KEY,
 });
 
-// Ensure the uploads directory exists
+// Ensure the uploads directory exists for temporary files
 const uploadsDir = join(process.cwd(), 'uploads');
 if (!existsSync(uploadsDir)) {
   mkdirSync(uploadsDir, { recursive: true });
@@ -56,24 +56,26 @@ export async function POST(request: NextRequest) {
 
     // Create a unique filename
     const timestamp = Date.now();
-    // We already have fileExtension from above
-    const fileName = `audio_${timestamp}.${fileExtension}`;
-    const filePath = join(uploadsDir, fileName);
-
-    // Convert the file to a Buffer and save it
+    const uniqueFileName = `audio_${timestamp}.${fileExtension}`;
+    
+    // Convert the file to a Buffer
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    await writeFile(filePath, buffer);
-
-    console.log(`File saved to ${filePath}`);
-
-    // Transcribe the audio using Groq
+    
+    // Create a temporary file for Groq (since it requires a file path)
+    const tempFilePath = join(uploadsDir, uniqueFileName);
+    
     try {
-      console.log(`Attempting to transcribe file: ${filePath}`);
+      // Write the buffer directly to a temporary file
+      await writeFile(tempFilePath, buffer);
+      console.log(`Temporary file created at: ${tempFilePath}`);
+      
+      console.log(`Attempting to transcribe file: ${uniqueFileName}`);
       console.log(`File extension: ${fileExtension}`);
       
+      // Transcribe the audio file using Groq API
       const transcription = await groq.audio.transcriptions.create({
-        file: createReadStream(filePath),
+        file: createReadStream(tempFilePath),
         model: "distil-whisper-large-v3-en",
         response_format: "verbose_json",
         timestamp_granularities: ["word", "segment"],
@@ -83,22 +85,23 @@ export async function POST(request: NextRequest) {
 
       console.log("Transcription completed successfully");
       
-      // Clean up the file after transcription
+      // Clean up the temporary file
       try {
-        unlinkSync(filePath);
-        console.log(`Temporary file ${filePath} deleted`);
+        unlinkSync(tempFilePath);
+        console.log(`Temporary file ${tempFilePath} deleted`);
       } catch (cleanupError) {
         console.error('Error deleting temporary file:', cleanupError);
       }
-
+      
+      // Return the transcription result directly without storing it
       return NextResponse.json(transcription);
-    } catch (transcriptionError: Error | unknown) {
+    } catch (transcriptionError: any) {
       console.error('Error during transcription:', transcriptionError);
       
-      // Clean up the file after error
+      // Clean up the temporary file on error
       try {
-        unlinkSync(filePath);
-        console.log(`Temporary file ${filePath} deleted after error`);
+        unlinkSync(tempFilePath);
+        console.log(`Temporary file ${tempFilePath} deleted after error`);
       } catch (cleanupError) {
         console.error('Error deleting temporary file:', cleanupError);
       }
@@ -123,10 +126,19 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Server error:', error);
+    
+    // Provide more detailed error information
+    let errorMessage = 'An unexpected error occurred';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === 'object' && error !== null) {
+      errorMessage = JSON.stringify(error);
+    }
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
