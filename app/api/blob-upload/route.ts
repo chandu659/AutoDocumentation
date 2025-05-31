@@ -8,7 +8,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const jsonResponse = await handleUpload({
       body,
       request,
-      onBeforeGenerateToken: async (_pathname) => {
+      onBeforeGenerateToken: async () => {
         // Generate a client token for the browser to upload the file
         // Validate file types for audio
         return {
