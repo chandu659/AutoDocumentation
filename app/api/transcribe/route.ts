@@ -7,7 +7,7 @@ export const config = {
   },
 };
 import { join } from 'path';
-import { existsSync, mkdirSync, createReadStream, writeFileSync, unlinkSync } from 'fs';
+import { existsSync, mkdirSync, createReadStream, unlinkSync } from 'fs';
 import { writeFile } from 'fs/promises';
 import Groq from 'groq-sdk';
 
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
       
       // Return the transcription result directly without storing it
       return NextResponse.json(transcription);
-    } catch (transcriptionError: any) {
+    } catch (transcriptionError: unknown) {
       console.error('Error during transcription:', transcriptionError);
       
       // Clean up the temporary file on error
@@ -110,13 +110,14 @@ export async function POST(request: NextRequest) {
       let errorMessage = 'Failed to transcribe audio';
       
       // Type guard to safely access error properties
-      if (transcriptionError && 
+      if (transcriptionError !== null && 
           typeof transcriptionError === 'object' && 
           'error' in transcriptionError && 
-          transcriptionError.error && 
+          transcriptionError.error !== null &&
           typeof transcriptionError.error === 'object' && 
-          'message' in transcriptionError.error) {
-        errorMessage = transcriptionError.error.message as string;
+          'message' in transcriptionError.error &&
+          typeof transcriptionError.error.message === 'string') {
+        errorMessage = transcriptionError.error.message;
       } else if (transcriptionError instanceof Error) {
         errorMessage = transcriptionError.message;
       }
@@ -126,15 +127,19 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Server error:', error);
     
     // Provide more detailed error information
     let errorMessage = 'An unexpected error occurred';
     if (error instanceof Error) {
       errorMessage = error.message;
-    } else if (typeof error === 'object' && error !== null) {
-      errorMessage = JSON.stringify(error);
+    } else if (error !== null && typeof error === 'object') {
+      try {
+        errorMessage = JSON.stringify(error);
+      } catch {
+        errorMessage = 'Error object could not be stringified';
+      }
     }
     
     return NextResponse.json(
