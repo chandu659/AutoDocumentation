@@ -3,7 +3,6 @@ import { join } from 'path';
 import { existsSync, mkdirSync, createReadStream, unlinkSync } from 'fs';
 import { writeFile } from 'fs/promises';
 import Groq from 'groq-sdk';
-import { list } from '@vercel/blob';
 
 // Initialize the Groq client
 const groq = new Groq({
