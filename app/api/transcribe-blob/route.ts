@@ -9,10 +9,20 @@ const groq = new Groq({
   apiKey: process.env.NEXT_PUBLIC_GROQ_API_KEY,
 });
 
+// Use the /tmp directory for serverless environments (like Vercel)
+// This is the only writable directory in serverless environments
+const uploadsDir = process.env.NODE_ENV === 'production'
+  ? '/tmp'
+  : join(process.cwd(), 'uploads');
+
 // Ensure the uploads directory exists for temporary files
-const uploadsDir = join(process.cwd(), 'uploads');
 if (!existsSync(uploadsDir)) {
-  mkdirSync(uploadsDir, { recursive: true });
+  try {
+    mkdirSync(uploadsDir, { recursive: true });
+    console.log(`Created uploads directory at: ${uploadsDir}`);
+  } catch (error) {
+    console.error(`Failed to create uploads directory: ${error}`);
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -30,8 +40,11 @@ export async function POST(request: NextRequest) {
 
     console.log(`Processing file from Vercel Blob: ${blobUrl}`);
     
+    console.log(`Environment: ${process.env.NODE_ENV}, Using uploads directory: ${uploadsDir}`);
+    
     // Create a temporary file path
     const tempFilePath = join(uploadsDir, fileName);
+    console.log(`Temporary file path: ${tempFilePath}`);
     
     try {
       // We don't need to get the blob metadata since we already have the URL
@@ -47,8 +60,24 @@ export async function POST(request: NextRequest) {
       
       // Convert the downloaded blob to a buffer and write to temp file
       const fileBuffer = Buffer.from(await response.arrayBuffer());
-      await writeFile(tempFilePath, fileBuffer);
-      console.log(`Temporary file created at: ${tempFilePath}`);
+      try {
+        await writeFile(tempFilePath, fileBuffer);
+        console.log(`Temporary file created at: ${tempFilePath}`);
+        
+        // Verify file exists after writing
+        if (existsSync(tempFilePath)) {
+          console.log(`Verified file exists at: ${tempFilePath}, size: ${fileBuffer.length} bytes`);
+        } else {
+          console.error(`Failed to verify file exists at: ${tempFilePath}`);
+          throw new Error(`File verification failed after writing to ${tempFilePath}`);
+        }
+      } catch (writeError: unknown) {
+        console.error(`Error writing file to ${tempFilePath}:`, writeError);
+        const errorMessage = writeError instanceof Error 
+          ? writeError.message 
+          : 'Unknown error writing temporary file';
+        throw new Error(`Failed to write temporary file: ${errorMessage}`);
+      }
       
       console.log(`Attempting to transcribe file: ${fileName}`);
       
