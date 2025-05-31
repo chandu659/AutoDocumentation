@@ -8,9 +8,9 @@ import { TranscriptionResult } from "../components/TranscriptionResult";
 import { TextManipulation } from "../components/TextManipulation";
 import { GoogleAuthPrompt } from "../components/GoogleAuthPrompt";
 import { TabSelector } from "../components/TabSelector";
-import { useTranscription } from "../hooks/useTranscription";
 import { useGoogleDocs } from "../hooks/useGoogleDocs";
 import { useTextManipulation } from "../hooks/useTextManipulation";
+import { useVercelBlobUpload } from "../hooks/useVercelBlobUpload";
 
 export default function Home() {
   // Use custom hooks for different functionalities
@@ -19,9 +19,10 @@ export default function Home() {
     isLoading,
     transcription,
     error,
+    uploadProgress,
     handleFileChange,
     transcribeAudio
-  } = useTranscription();
+  } = useVercelBlobUpload();
 
   const {
     exportLoading,
@@ -83,6 +84,18 @@ export default function Home() {
             <FileUploader file={file} onFileChange={handleFileChange} />
             
             <ErrorAlert message={error} />
+
+            {uploadProgress > 0 && uploadProgress < 100 && (
+              <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mb-4">
+                <div 
+                  className="bg-blue-600 h-2.5 rounded-full" 
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+                  {uploadProgress < 90 ? 'Uploading...' : 'Processing...'} {uploadProgress}%
+                </p>
+              </div>
+            )}
 
             <div className="flex justify-center">
               <LoadingButton
