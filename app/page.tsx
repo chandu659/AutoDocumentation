@@ -78,9 +78,6 @@ export default function Home() {
             </svg>
             <h1 className="text-xl font-medium text-gray-800 dark:text-gray-100">Speech to Text Documentation</h1>
           </div>
-          <div>
-            <span className="bg-blue-50 text-blue-700 text-xs font-medium px-3 py-1 rounded-full dark:bg-blue-900/30 dark:text-blue-300">Powered by Groq AI</span>
-          </div>
         </div>
       </header>
 
@@ -170,7 +167,7 @@ export default function Home() {
                 </svg>
                 <h3 className="text-xl font-medium text-gray-800 dark:text-gray-100 mb-3">No Transcription Yet</h3>
                 <p className="text-gray-600 dark:text-gray-400 text-center max-w-md">
-                  Upload an audio file and click "Transcribe Audio" to get started. Your transcription and AI-powered analysis will appear here.
+                  Upload an audio file and click &quot;Transcribe Audio&quot; to get started. Your transcription and AI-powered analysis will appear here.
                 </p>
               </div>
             )}
